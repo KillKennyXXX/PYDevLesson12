@@ -52,7 +52,7 @@ def getKeysByUrls(urls):
                 skills.append(skill['name'])
         percent2 = int(count / countAll * 100)
         if percent != percent2:
-            if percent == 50:
+            if percent == 33 or percent == 66:
                 print()
             print(percent2, end="% ")
 
@@ -78,7 +78,8 @@ def getUrls(search):
 
 def getStatSkills(skills):
     key_skills = {}
-    for skill in skills:
+    for obj in skills:
+        skill = obj.encode('utf8').decode('utf8')
         if skill in key_skills:
             key_skills[skill] += 1
         else:
@@ -99,7 +100,7 @@ key_skills = getStatSkills(skills)
 result = sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
 print(result)
 print('Сохраняем результаты')
-save_stat(result, 'stat.json')
+save_stat(result, 'py_stat.json')
 
 
 
