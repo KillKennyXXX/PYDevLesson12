@@ -62,11 +62,11 @@ def getKeysByUrls(urls):
     return skills
 
 
-def getUrls():
+def getUrls(search):
     urls = []
     for page in range(0, 20):
         # time.sleep(2)
-        jsObj = getPages('python', '1', page)
+        jsObj = getPages(search, '1', page)
         if (jsObj['pages'] - page) >= 1:
             for obj in jsObj['items']:
                 if obj['url']:
@@ -89,7 +89,7 @@ def getStatSkills(skills):
 #     if obj:
 #         print(obj)
 print('Формируем ссылки')
-urls = getUrls()
+urls = getUrls('python')
 print(urls)
 print('Формируем скилы')
 skills = getKeysByUrls(urls)
