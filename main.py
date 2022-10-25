@@ -84,23 +84,22 @@ def getStatSkills(skills):
             key_skills[skill] += 1
         else:
             key_skills[skill] = 1
-    return key_skills
+    return sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
 
 # for obj in getUrls():
 #     if obj:
 #         print(obj)
 print('Формируем ссылки')
-urls = getUrls('python')
+urls = getUrls('java')
 print(urls)
 print('Формируем скилы')
 skills = getKeysByUrls(urls)
 print(skills)
 print('Формируем сводную таблицу по скилам')
 key_skills = getStatSkills(skills)
-result = sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
-print(result)
+print(key_skills)
 print('Сохраняем результаты')
-save_stat(result, 'py_stat.json')
+save_stat(key_skills, 'java_stat.json_stat.json')
 
 
 
