@@ -1,7 +1,5 @@
 # Поиск вакансий
-import time
-import requests
-import pprint
+from requests import get
 import json
 
 proxies = {
@@ -30,7 +28,7 @@ def getPages(search, area, page):
         'page': page,  # Номер страницы
         'per_page': 100  # Кол-во вакансий на 1 странице
     }
-    req = requests.get('https://api.hh.ru/vacancies', params=params)
+    req = get('https://api.hh.ru/vacancies', params=params)
     data = req.json()
     req.close()
     return data
@@ -45,7 +43,7 @@ def getKeysByUrls(urls):
 
     for url in urls:
         # time.sleep(2)
-        req = requests.get(url, params=params)
+        req = get(url, params=params)
         data = req.json()
         for skill in data['key_skills']:
             if skill:
@@ -62,17 +60,24 @@ def getKeysByUrls(urls):
     return skills
 
 
-def getUrls(search):
+def getUrls(search, area=1, page=0):
     urls = []
-    for page in range(0, 20):
-        # time.sleep(2)
-        jsObj = getPages(search, '1', page)
+    if page == 0:
+        for page in range(0, 20):
+            # time.sleep(2)
+            jsObj = getPages(search, area, page)
+            if (jsObj['pages'] - page) >= 1:
+                for obj in jsObj['items']:
+                    if obj['url']:
+                        urls.append(obj['url'])
+            else:
+                break
+    else:
+        jsObj = getPages(search, area, page)
         if (jsObj['pages'] - page) >= 1:
             for obj in jsObj['items']:
                 if obj['url']:
                     urls.append(obj['url'])
-        else:
-            break
 
     return urls
 
@@ -86,20 +91,51 @@ def getStatSkills(skills):
             key_skills[skill] = 1
     return sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
 
-# for obj in getUrls():
-#     if obj:
-#         print(obj)
-print('Формируем ссылки')
-urls = getUrls('java')
-print(urls)
-print('Формируем скилы')
-skills = getKeysByUrls(urls)
-print(skills)
-print('Формируем сводную таблицу по скилам')
-key_skills = getStatSkills(skills)
-print(key_skills)
-print('Сохраняем результаты')
-save_stat(key_skills, 'java_stat.json_stat.json')
+def read_url(url):
+    row = {}
+
+    req = get(url)
+    data = req.json()
+    row['url'] = data['alternate_url']
+    row['name'] = data['name']
+    row['date'] = data['published_at']
+    row['salary'] = data['salary']
+    try:
+        row['address'] = data['address']['raw']
+    except:
+        row['address'] = data['address']
+    row['employer'] = data['employer']['name']
+    try:
+        row['employer_img'] = data['employer']['logo_urls']['240']
+    except:
+        row['employer_img'] = data['employer']
+    row['schedule'] = data['schedule']['name']
+    row['employment'] = data['employment']['name']
+    row['spec'] = data['specializations'][1]['name']
+    row['prof'] = data['professional_roles'][0]['name']
+    row['key_skills'] = data['key_skills']
+    row['info'] = data['description']
+    return row
+
+
+
+if __name__ == '__main__':
+    # print('Формируем ссылки')
+    # urls = getUrls('java')
+    # print(urls)
+    # print('Формируем скилы')
+    # skills = getKeysByUrls(urls)
+    # print(skills)
+    # print('Формируем сводную таблицу по скилам')
+    # key_skills = getStatSkills(skills)
+    # print(key_skills)
+    # print('Сохраняем результаты')
+    # save_stat(key_skills, 'java_stat.json')
+    data = getUrls('Python', 1, 1)
+    data = data[0]
+    print(read_url(data))
+
+
 
 
 
