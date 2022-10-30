@@ -62,7 +62,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   :root {
-    scroll-behavior: smooth;
+    /*scroll-behavior: smooth;*/
   }
 }
 
@@ -5509,7 +5509,7 @@ textarea.form-control-lg {
 }
 .modal-dialog-scrollable .modal-content {
   max-height: 100%;
-  overflow: hidden;
+  /*overflow: hidden;*/
 }
 .modal-dialog-scrollable .modal-body {
   overflow-y: auto;
@@ -11315,7 +11315,7 @@ video.bg-video {
 
 @media (pointer: coarse) and (hover: none) {
   body {
-    background: url("../assets/img/bg-mobile-fallback.jpg") #2a5555 no-repeat center center scroll;
+    background: url("../../Templates/assets/img/bg-mobile-fallback.jpg") #2a5555 no-repeat center center scroll;
     background-size: cover;
   }
 
