@@ -22,11 +22,16 @@ def top(json_file):
 
 @app.route("/topPY/")
 def top_py():
-    return render_template('top.html', data=top('py_stat.json'))
+    return render_template('top.html', data=hh.read_top_skills_in_db('python', '1'))
 
 @app.route("/topJava/")
 def top_java():
-    return render_template('top.html', data=top('java_stat.json'))
+    return render_template('top.html', data=hh.read_top_skills_in_db('java', '1'))
+
+@app.route("/topC_Sharp/")
+def top_C_sharp():
+    return render_template('top.html', data=hh.read_top_skills_in_db('C#', '1'))
+
 
 @app.route("/habr/", endpoint="habr_news")
 def habr_news():

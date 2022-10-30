@@ -1,6 +1,10 @@
 # Поиск вакансий
 from requests import get
 import json
+import sqlite3
+
+# Подключение к базе данных
+
 
 proxies = {
     'http': 'http://167.86.96.4:3128',
@@ -14,6 +18,46 @@ headers = {
 
 # result = requests.get(url, headers=headers, proxies=proxies)
 
+def save_to_db(data, skills):
+    conn = sqlite3.connect('db.sqlite')
+    cursor = conn.cursor()
+    cursor.execute("insert or ignore into hh_region (id, name) VALUES (?, ?)", (data['area'], 'Москва'))
+    conn.commit()
+    cursor.execute("insert or ignore into hh_key (name) VALUES (?)", (data['key'],))
+    conn.commit()
+    cursor.execute('SELECT id from hh_key where name = ? limit 1', (data['key'],))
+    key_id = cursor.fetchall()
+    # cursor.execute("DELETE FROM hh_urls", )
+    # conn.commit()
+    for url in data['urls']:
+        cursor.execute("insert or ignore into hh_urls (name,region_id, key_id) VALUES (?, ?, ?)",
+                       (url, data['area'], key_id[0][0]))
+    conn.commit()
+    for key_s in skills.keys():
+        cursor.execute("insert or ignore into hh_skills (name) VALUES (?)", (key_s,))
+    conn.commit()
+
+    cursor.execute("DELETE FROM hh_region_key_skills where key_id = ? and region_id = ? ", (key_id[0][0], data['area']))
+    conn.commit()
+    for key_s, num_s in skills.items():
+        cursor.execute('SELECT id from hh_skills where name = ? limit 1', (key_s,))
+        skill = cursor.fetchall()
+        cursor.execute("insert or ignore into hh_region_key_skills ( num, region_id, key_id, skills_id) VALUES (?, ?, ?, ?)",
+                       (num_s, data['area'], key_id[0][0], skill[0][0]))
+    conn.commit()
+
+
+def read_top_skills_in_db(key, region):
+    conn = sqlite3.connect('db.sqlite')
+    cursor = conn.cursor()
+    query = 'SELECT hh_skills.name as skill, i.num  ' \
+            'FROM hh_region_key_skills i, hh_key, hh_region, hh_skills ' \
+            'where region_id=hh_region.id and key_id=hh_key.id and skills_id= hh_skills.id ' \
+            'and hh_key.name = "'+key+'" and hh_region.id='+region+'  order by i.num desc limit 15'
+    print(query)
+    cursor.execute(query)
+
+    return cursor.fetchall()
 
 
 def save_stat(req, file_name):
@@ -61,6 +105,9 @@ def getKeysByUrls(urls):
 
 
 def getUrls(search, area=1, page=0):
+    data = {}
+    data['area'] = area
+    data['key'] = search
     urls = []
     if page == 0:
         for page in range(0, 20):
@@ -79,7 +126,8 @@ def getUrls(search, area=1, page=0):
                 if obj['url']:
                     urls.append(obj['url'])
 
-    return urls
+    data['urls'] = urls
+    return data
 
 def getStatSkills(skills):
     key_skills = {}
@@ -89,7 +137,8 @@ def getStatSkills(skills):
             key_skills[skill] += 1
         else:
             key_skills[skill] = 1
-    return sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
+    # return sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
+    return key_skills
 
 def read_url(url):
     row = {}
@@ -120,20 +169,20 @@ def read_url(url):
 
 
 if __name__ == '__main__':
-    # print('Формируем ссылки')
-    # urls = getUrls('java')
-    # print(urls)
-    # print('Формируем скилы')
-    # skills = getKeysByUrls(urls)
-    # print(skills)
-    # print('Формируем сводную таблицу по скилам')
-    # key_skills = getStatSkills(skills)
-    # print(key_skills)
-    # print('Сохраняем результаты')
-    # save_stat(key_skills, 'java_stat.json')
-    data = getUrls('Python', 1, 1)
-    data = data[0]
-    print(read_url(data))
+    print('Формируем ссылки')
+    urls = getUrls('C#')
+    print(urls)
+    print('Формируем скилы')
+    skills = getKeysByUrls(urls['urls'])
+    print(skills)
+    print('Формируем сводную таблицу по скилам')
+    key_skills = getStatSkills(skills)
+    print(key_skills)
+    print('Сохраняем результаты')
+    save_to_db(urls, key_skills)
+    print(read_top_skills_in_db('java', '1'))
+
+
 
 
 
