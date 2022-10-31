@@ -1,48 +1,92 @@
+from sqlalchemy import Column, Integer, String, create_engine, ForeignKey, Table
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-# https://anflat.ru/rent/apartments/kazan/
+engine = create_engine('sqlite:///orm.sqlite', echo=False)
 
-# hh
-# название, регион, ключевые скилы
-# python developer, Москва, (python, sql)
-# java delevoper, Питер, (java, spring)
-# ruby, Москва, (python, ruby)
+Base = declarative_base()
 
-# Реляционная база
-# Таблица, связи
+vacancyskill = Table('vacancyskill', Base.metadata,
+                     Column('id', Integer, primary_key=True),
+                     Column('vacancy_id', Integer, ForeignKey('vacancy.id')),
+                     Column('skill_id', Integer, ForeignKey('skill.id'))
+                     )
 
-import sqlite3
 
-# Подключение к базе данных
-conn = sqlite3.connect('db.sqlite')
+class Skill(Base):
+    __tablename__ = 'skill'
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
 
-# Создаем курсор
-cursor = conn.cursor()
+    def __init__(self, name):
+        self.name = name
 
-cursor.execute('SELECT * from region')
+    def __str__(self):
+        return self.name
 
-result = cursor.fetchall()
-print(result)
 
-for item in result:
-    print(item)
-    print(type(item))
+class Region(Base):
+    __tablename__ = 'region'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    number = Column(Integer, nullable=True)
 
-cursor.execute('SELECT * from region where name=?', ('Москва',))
+    # note = Column(String, nullable=True)
 
-print(cursor.fetchall())
+    def __init__(self, name, number):
+        self.name = name
+        self.number = number
 
-# Если запрос ничего не возращает то делаем execute
-cursor.execute("insert into vacancykey_skills (vacancy_id, key_skills_id) VALUES (?, ?)", (1, 5))
+    def __str__(self):
+        return f'{self.id}) {self.name}: {self.number}'
 
-cursor.execute('SELECT * from vacancykey_skills')
 
-print(cursor.fetchall())
+class Vacancy(Base):
+    __tablename__ = 'vacancy'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    # Связь 1 - много, связь внешний ключ
+    region_id = Column(Integer, ForeignKey('region.id'))
 
-query = 'select vk.id, v.name, k.name, r.name from vacancy v, ' \
-        'key_skills k, vacancykey_skills vk, region r where vk.vacancy_id = v.id' \
-        ' and vk.key_skills_id = k.id and v.region_id = r.id'
+    def __init__(self, name, region_id):
+        self.name = name
+        self.region_id = region_id
 
-# Вывести в нормальном виде таблицу скилы + вакансии
-cursor.execute(query)
 
-print(cursor.fetchall())
+# Создание таблицы
+Base.metadata.create_all(engine)
+
+# Заполняем таблицы
+Session = sessionmaker(bind=engine)
+
+# create a Session
+session = Session()
+
+# Регионы
+session.add_all([Region('Москва', 0), Region('Питер', 78)])
+
+# Скилы
+# session.add_all([Skill('python'), Skill('java')])
+
+session.commit()
+
+# Создадим вакансии в разных регионах
+# выбираем регионы
+regions = session.query(Region).all()
+
+for region in regions:
+    new_vacancy = Vacancy('какое то название', region.id)
+    session.add(new_vacancy)
+
+session.commit()
+
+# Выборка данных в регионе Москва
+# 1. id региона москва
+moscow = session.query(Region).filter(Region.name == 'Москва').first()
+print(moscow)
+
+# 2. вакансии в регионе москва
+vacancies = session.query(Vacancy).filter(Vacancy.region_id == moscow.id).all()
+
+print(len(vacancies))
+print(vacancies[0].region_id)
