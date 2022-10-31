@@ -2,10 +2,11 @@
 {% include 'navigation.html' %}
 
  {% if data %}
-<div class="masthead">
+<div class="masthead mt-2 px-5">
 
-    <div class="masthead-content text-white px-5">
-           <h4><a href="{{data.link}}">{{data.title}}</a></h4>
+    <div class="masthead-content text-white mt-5 ">
+
+           <h4 class="mt-5"><a href="{{data.link}}">{{data.title}}</a></h4>
             <h6>{{data.date}}</h6>
             {% if data.img %}
             <img src="{{data.img}}" class="d-block w-100 " alt="...">
