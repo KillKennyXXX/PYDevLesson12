@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import hh_query as hh
 import habr_news as habr
-import sqlite3
+import db_sqlalchemy as db
 
 news_url = habr.get_news()
 hh_urls = []
@@ -11,10 +11,12 @@ app = Flask(__name__)
 
 
 def add_about_to_db(name, email, subject, message):
-    conn = sqlite3.connect('db.sqlite')
-    cursor = conn.cursor()
-    cursor.execute("insert or ignore into about ( name, email, subject, message ) VALUES (?, ?, ?, ?)", (name, email, subject, message))
-    conn.commit()
+    # conn = sqlite3.connect('db.sqlite')
+    # cursor = conn.cursor()
+    # cursor.execute("insert or ignore into about ( name, email, subject, message ) VALUES (?, ?, ?, ?)",
+    #                (name, email, subject, message))
+    # conn.commit()
+    db.save_about(name, email, subject, message)
 
 @app.route("/")
 def index():

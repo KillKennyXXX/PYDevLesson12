@@ -2,6 +2,7 @@
 from requests import get
 import json
 import sqlite3
+import db_sqlalchemy as db
 
 # Подключение к базе данных
 
@@ -18,7 +19,7 @@ headers = {
 
 # result = requests.get(url, headers=headers, proxies=proxies)
 
-def save_to_db(data, skills):
+def save_to_db_old(data, skills):
     conn = sqlite3.connect('db.sqlite')
     cursor = conn.cursor()
     cursor.execute("insert or ignore into hh_region (id, name) VALUES (?, ?)", (data['area'], 'Москва'))
@@ -37,7 +38,8 @@ def save_to_db(data, skills):
         cursor.execute("insert or ignore into hh_skills (name) VALUES (?)", (key_s,))
     conn.commit()
 
-    cursor.execute("DELETE FROM hh_region_key_skills where key_id = ? and region_id = ? ", (key_id[0][0], data['area']))
+    cursor.execute("DELETE FROM hh_region_key_skills where key_id = ? and region_id = ? ",
+                   (key_id[0][0], data['area']))
     conn.commit()
     for key_s, num_s in skills.items():
         cursor.execute('SELECT id from hh_skills where name = ? limit 1', (key_s,))
@@ -46,8 +48,11 @@ def save_to_db(data, skills):
                        (num_s, data['area'], key_id[0][0], skill[0][0]))
     conn.commit()
 
+def save_to_db(data, skills):
+    db.save_to_db(data, skills)
 
-def read_top_skills_in_db(key, region):
+
+def read_top_skills_in_db_old(key, region):
     conn = sqlite3.connect('db.sqlite')
     cursor = conn.cursor()
     query = 'SELECT hh_skills.name as skill, i.num  ' \
@@ -59,6 +64,8 @@ def read_top_skills_in_db(key, region):
 
     return cursor.fetchall()
 
+def read_top_skills_in_db(key, region):
+    return db.read_top_skills_in_db(key, region)
 
 def save_stat(req, file_name):
     with open(file_name, 'w') as f:
@@ -170,7 +177,7 @@ def read_url(url):
 
 if __name__ == '__main__':
     print('Формируем ссылки')
-    urls = getUrls('C#')
+    urls = getUrls('java')
     print(urls)
     print('Формируем скилы')
     skills = getKeysByUrls(urls['urls'])

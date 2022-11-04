@@ -39,7 +39,7 @@ def read_news(news_url):
 
         img = soup.find_all('img', class_='')
         img = img[0]
-        row['img'] = img['src']
+        row['img'] = img['src'] if '.jpeg' in img['src'] or '.jpg' in img['src'] or '.png' in img['src'] else ''
         text = ''
         for tag in soup.find_all('p', class_=''):
             text += tag.text
