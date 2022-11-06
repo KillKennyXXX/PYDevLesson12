@@ -136,6 +136,9 @@ def getUrls(search, area=1, page=0):
     data['urls'] = urls
     return data
 
+def read_keys():
+    return db.read_keys()
+
 def getStatSkills(skills):
     key_skills = {}
     for obj in skills:
@@ -177,7 +180,7 @@ def read_url(url):
 
 if __name__ == '__main__':
     print('Формируем ссылки')
-    urls = getUrls('java')
+    urls = getUrls('C#')
     print(urls)
     print('Формируем скилы')
     skills = getKeysByUrls(urls['urls'])
@@ -187,7 +190,7 @@ if __name__ == '__main__':
     print(key_skills)
     print('Сохраняем результаты')
     save_to_db(urls, key_skills)
-    print(read_top_skills_in_db('java', '1'))
+    # print(read_top_skills_in_db('python', '1'))
 
 
 

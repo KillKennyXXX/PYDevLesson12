@@ -122,17 +122,17 @@ def save_to_db(data, skills):
     key = session.query(Hh_key).filter(Hh_key.name == data['key']).first()
     if not region:
         session.add_all([Hh_region('Москва', 1), Hh_region('Питер', 2)])
-    session.commit()
+    session.flush()
     if not key:
         session.add(Hh_key(data['key']))
-    session.commit()
+    session.flush()
 
     for key_s in skills.keys():
         skill = session.query(Hh_skills).filter(Hh_skills.name == key_s).first()
         if not skill:
             session.add(Hh_skills(key_s))
 
-    session.commit()
+    session.flush()
 
     region = session.query(Hh_region).filter(Hh_region.number == data['area']).first()
     key = session.query(Hh_key).filter(Hh_key.name == data['key']).first()
@@ -141,7 +141,7 @@ def save_to_db(data, skills):
         url_table = session.query(Hh_urls).filter(Hh_urls.name == url).first()
         if not url_table:
             session.add(Hh_urls(url, data['area'], key.id))
-    session.commit()
+    session.flush()
 
 
     for key_s, num_s in skills.items():
@@ -150,18 +150,30 @@ def save_to_db(data, skills):
     session.commit()
 
     session.close()
-
+def read_keys():
+    global engine
+    Session = sessionmaker(bind=engine)
+    # create a Session
+    session = Session()
+    keys = session.query(Hh_key).all()
+    result = []
+    for key in keys:
+        result.append(key.name)
+    return result
 
 def read_top_skills_in_db(key, region):
     global engine
     Session = sessionmaker(bind=engine)
     # create a Session
     session = Session()
-    region = session.query(Hh_region).filter(Hh_region.number == region).first()
-    key = session.query(Hh_key).filter(Hh_key.name == key).first()
+    hh_region = session.query(Hh_region).filter(Hh_region.number == region).first()
+    hh_key = session.query(Hh_key).filter(Hh_key.name == key).first()
+    print(hh_region.id)
+    print(hh_key.id)
     if key and region:
         skills = session.query(Hh_region_key_skills)\
-            .filter(Hh_region_key_skills.region_id == region.id and Hh_region_key_skills.key_id == key.id)\
+            .filter(Hh_region_key_skills.key_id == hh_key.id) \
+            .filter(Hh_region_key_skills.region_id == hh_region.id)\
             .order_by(Hh_region_key_skills.num.desc()).all()
         result = []
         for skill in skills[:15]:

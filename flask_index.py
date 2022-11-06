@@ -29,15 +29,24 @@ def index():
 #     json.dumps(result, sort_keys=False, indent=4, ensure_ascii=False, separators=(',', ': '))
 #     return result[:10]
 
-
-@app.route("/topPY/")
+@app.route("/top/", methods=['GET'])
 def top_py():
-    return render_template('top.html', data=hh.read_top_skills_in_db('python', '1'))
+    skill = request.args.get('skill')
+    skills = hh.read_keys()
+    if skill in skills:
+        return render_template('top.html', data=hh.read_top_skills_in_db(skill, '1'), skill=skill, skills=skills)
+    else:
+        return render_template('top.html', data=0, skill=0, skills=skills)
 
 
-@app.route("/topJava/")
-def top_java():
-    return render_template('top.html', data=hh.read_top_skills_in_db('java', '1'))
+# @app.route("/topPY/")
+# def top_py():
+#     return render_template('top.html', data=hh.read_top_skills_in_db('python', '1'))
+
+
+# @app.route("/topJava/")
+# def top_java():
+#     return render_template('top.html', data=hh.read_top_skills_in_db('java', '1'))
 
 
 @app.route("/topC_Sharp/")
@@ -68,7 +77,9 @@ def contacts_post():
     email = request.form.get('email')
     subject = request.form.get('subject')
     message = request.form.get('message')
-    add_about_to_db(name, email, subject, message)
+    if name and email and subject and message:
+        add_about_to_db(name, email, subject, message)
+        print(f"Добавлена запись - name: {name}, email: {email}, subject: {subject}, message: {message}" )
     return render_template('about.html')
 
 
