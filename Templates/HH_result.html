@@ -1,0 +1,81 @@
+{% include 'header.html' %}
+{% include 'navigation.html' %}
+{% if data %}
+<div class="masthead mt-2">
+<!--  row['name'] = data['name']-->
+<!--    row['date'] = data['published_at']-->
+<!--    row['salary'] = data['salary']-->
+<!--    row['address'] = data['address']['raw']-->
+<!--    row['employer'] = data['employer']['name']-->
+<!--    row['employer_img'] = data['employer']['logo_urls']['240']-->
+<!--    row['schedule'] = data['schedule']['name']-->
+<!--    row['employment'] = data['employment']['name']-->
+<!--    row['spec'] = data['specializations'][1]['name']-->
+<!--    row['prof'] = data['professional_roles'][0]['name']-->
+<!--    row['key_skills'] = data['key_skills']-->
+<!--    row['info'] = data['description']-->
+    <div class="masthead-content text-white my-5 pt-5">
+            <h3><a href="/HH/">Back to HH query</a></h3>
+
+            {% if data.employer_img %}
+            <img src="{{data.employer_img}}" class="d-block w-50 "  alt="...">
+            {% endif %}
+            <h5><a href="{{data.url}}">Employer: {{data.employer}}</a></h5>
+            <h3>Vacancy: {{data.name}}</h3>
+            <h6>Date: {{data.date}}</h6>
+            <h6>Salary: {{data.salary}}</h6>
+            <h6>Address: {{data.address}}</h6>
+            <h6>Schedule: {{data.schedule}}</h6>
+            <h6>Employment: {{data.employment}}</h6>
+            <h6>Specializations: {{data.spec}}</h6>
+            <h6>Professional_roles: {{data.prof}}</h6>
+            <p>Skills:
+            {% for skill in data.key_skills %}
+            {{skill.name}}
+            {% endfor %}
+            </p>
+<!--            {{data.info}}-->
+
+
+        <nav aria-label="Page navigation example">
+          <ul class="pagination">
+             {% if num>1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?vacancy={{num-1}}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+             {% endif %}
+
+        {% if num>3 %}
+            {% for i in range(num-3, num+3) %}
+                   {% if nums -i +1 > 0  %}
+                         <li class="page-item"><a class="page-link" href="?vacancy={{i}}">{{i}}</a></li>
+                   {% endif %}
+              {% endfor %}
+        {% else %}
+              {% for i in range(1, 6) %}
+                  {% if nums-num-i %}
+                         <li class="page-item"><a class="page-link" href="?vacancy={{i}}">{{i}}</a></li>
+                    {% endif %}
+              {% endfor %}
+        {% endif %}
+
+
+            {% if nums-num %}
+            <li class="page-item">
+              <a class="page-link" href="?vacancy={{num+1}}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+             {% endif %}
+          </ul>
+        </nav>
+
+        </div>
+    </div>
+</div>
+    {% else %}
+        Данных нет
+    {% endif %}
+{% include 'footer.html' %}

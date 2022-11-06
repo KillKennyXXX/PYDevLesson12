@@ -1,8 +1,11 @@
 # Поиск вакансий
-import time
-import requests
-import pprint
+from requests import get
 import json
+import sqlite3
+import db_sqlalchemy as db
+
+# Подключение к базе данных
+
 
 proxies = {
     'http': 'http://167.86.96.4:3128',
@@ -16,7 +19,53 @@ headers = {
 
 # result = requests.get(url, headers=headers, proxies=proxies)
 
+def save_to_db_old(data, skills):
+    conn = sqlite3.connect('db.sqlite')
+    cursor = conn.cursor()
+    cursor.execute("insert or ignore into hh_region (id, name) VALUES (?, ?)", (data['area'], 'Москва'))
+    conn.commit()
+    cursor.execute("insert or ignore into hh_key (name) VALUES (?)", (data['key'],))
+    conn.commit()
+    cursor.execute('SELECT id from hh_key where name = ? limit 1', (data['key'],))
+    key_id = cursor.fetchall()
+    # cursor.execute("DELETE FROM hh_urls", )
+    # conn.commit()
+    for url in data['urls']:
+        cursor.execute("insert or ignore into hh_urls (name,region_id, key_id) VALUES (?, ?, ?)",
+                       (url, data['area'], key_id[0][0]))
+    conn.commit()
+    for key_s in skills.keys():
+        cursor.execute("insert or ignore into hh_skills (name) VALUES (?)", (key_s,))
+    conn.commit()
 
+    cursor.execute("DELETE FROM hh_region_key_skills where key_id = ? and region_id = ? ",
+                   (key_id[0][0], data['area']))
+    conn.commit()
+    for key_s, num_s in skills.items():
+        cursor.execute('SELECT id from hh_skills where name = ? limit 1', (key_s,))
+        skill = cursor.fetchall()
+        cursor.execute("insert or ignore into hh_region_key_skills ( num, region_id, key_id, skills_id) VALUES (?, ?, ?, ?)",
+                       (num_s, data['area'], key_id[0][0], skill[0][0]))
+    conn.commit()
+
+def save_to_db(data, skills):
+    db.save_to_db(data, skills)
+
+
+def read_top_skills_in_db_old(key, region):
+    conn = sqlite3.connect('db.sqlite')
+    cursor = conn.cursor()
+    query = 'SELECT hh_skills.name as skill, i.num  ' \
+            'FROM hh_region_key_skills i, hh_key, hh_region, hh_skills ' \
+            'where region_id=hh_region.id and key_id=hh_key.id and skills_id= hh_skills.id ' \
+            'and hh_key.name = "'+key+'" and hh_region.id='+region+'  order by i.num desc limit 15'
+    print(query)
+    cursor.execute(query)
+
+    return cursor.fetchall()
+
+def read_top_skills_in_db(key, region):
+    return db.read_top_skills_in_db(key, region)
 
 def save_stat(req, file_name):
     with open(file_name, 'w') as f:
@@ -30,7 +79,7 @@ def getPages(search, area, page):
         'page': page,  # Номер страницы
         'per_page': 100  # Кол-во вакансий на 1 странице
     }
-    req = requests.get('https://api.hh.ru/vacancies', params=params)
+    req = get('https://api.hh.ru/vacancies', params=params)
     data = req.json()
     req.close()
     return data
@@ -45,7 +94,7 @@ def getKeysByUrls(urls):
 
     for url in urls:
         # time.sleep(2)
-        req = requests.get(url, params=params)
+        req = get(url, params=params)
         data = req.json()
         for skill in data['key_skills']:
             if skill:
@@ -62,19 +111,33 @@ def getKeysByUrls(urls):
     return skills
 
 
-def getUrls(search):
+def getUrls(search, area=1, page=0):
+    data = {}
+    data['area'] = area
+    data['key'] = search
     urls = []
-    for page in range(0, 20):
-        # time.sleep(2)
-        jsObj = getPages(search, '1', page)
+    if page == 0:
+        for page in range(0, 20):
+            # time.sleep(2)
+            jsObj = getPages(search, area, page)
+            if (jsObj['pages'] - page) >= 1:
+                for obj in jsObj['items']:
+                    if obj['url']:
+                        urls.append(obj['url'])
+            else:
+                break
+    else:
+        jsObj = getPages(search, area, page)
         if (jsObj['pages'] - page) >= 1:
             for obj in jsObj['items']:
                 if obj['url']:
                     urls.append(obj['url'])
-        else:
-            break
 
-    return urls
+    data['urls'] = urls
+    return data
+
+def read_keys():
+    return db.read_keys()
 
 def getStatSkills(skills):
     key_skills = {}
@@ -84,22 +147,54 @@ def getStatSkills(skills):
             key_skills[skill] += 1
         else:
             key_skills[skill] = 1
-    return sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
+    # return sorted(key_skills.items(), key=lambda k: k[1], reverse=True)
+    return key_skills
 
-# for obj in getUrls():
-#     if obj:
-#         print(obj)
-print('Формируем ссылки')
-urls = getUrls('java')
-print(urls)
-print('Формируем скилы')
-skills = getKeysByUrls(urls)
-print(skills)
-print('Формируем сводную таблицу по скилам')
-key_skills = getStatSkills(skills)
-print(key_skills)
-print('Сохраняем результаты')
-save_stat(key_skills, 'java_stat.json_stat.json')
+def read_url(url):
+    row = {}
+
+    req = get(url)
+    data = req.json()
+    row['url'] = data['alternate_url']
+    row['name'] = data['name']
+    row['date'] = data['published_at']
+    row['salary'] = data['salary']
+    try:
+        row['address'] = data['address']['raw']
+    except:
+        row['address'] = data['address']
+    row['employer'] = data['employer']['name']
+    try:
+        row['employer_img'] = data['employer']['logo_urls']['240']
+    except:
+        row['employer_img'] = data['employer']
+    row['schedule'] = data['schedule']['name']
+    row['employment'] = data['employment']['name']
+    row['spec'] = data['specializations'][1]['name']
+    row['prof'] = data['professional_roles'][0]['name']
+    row['key_skills'] = data['key_skills']
+    row['info'] = data['description']
+    return row
+
+
+
+if __name__ == '__main__':
+    print('Формируем ссылки')
+    urls = getUrls('C#')
+    print(urls)
+    print('Формируем скилы')
+    skills = getKeysByUrls(urls['urls'])
+    print(skills)
+    print('Формируем сводную таблицу по скилам')
+    key_skills = getStatSkills(skills)
+    print(key_skills)
+    print('Сохраняем результаты')
+    save_to_db(urls, key_skills)
+    # print(read_top_skills_in_db('python', '1'))
+
+
+
+
 
 
 
